@@ -1,3 +1,14 @@
+Mon May  4 16:34:38 2026  Rob Lauer  <rclauer@gmail.com>
+
+	[1.2.1]:
+	* ChangeLog: modified
+	* README.md: modified
+	* VERSION: modified
+	* src/main/perl/lib/Amazon/Credentials.pm.in
+	- lazy load modules
+	- remove Module::Load
+	* src/main/perl/lib/Amazon/Credentials/HTTP/Response.pm.in: modified
+
 Fri Mar 27 09:53:25 2026  Rob Lauer  <rclauer@gmail.com>
 
 	[1.2.0]:

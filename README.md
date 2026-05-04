@@ -74,7 +74,7 @@ The default credential search order is:
 
 # VERSION
 
-This document reverse to verion 1.2.0 of
+This document reverse to verion 1.2.1 of
 [Amazon::Credentials](https://metacpan.org/pod/Amazon%3A%3ACredentials).
 
 # METHODS AND SUBROUTINES
