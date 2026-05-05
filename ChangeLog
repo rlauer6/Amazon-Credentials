@@ -1,7 +1,138 @@
+Tue May  5 09:38:55 2026  Rob Lauer  <rclauer@gmail.com>
+
+	[1.3.0]: CPAN::Maker::Bootstrapper build
+	* README.md: generated
+	* VERSION: bump
+	* release-notes-1.3.0.md: new
+	* .github/workflows/build.yml: new
+	* .includes/git.mk: new
+	* .includes/help.mk: new
+	* .includes/perl.mk: new
+	* .includes/release-notes.mk: new
+	* .includes/update.mk: new
+	* .includes/upgrade.mk: new
+	* Makefile: new
+	* requires
+	- -Crypt::CBC, Crypt::Cipher::AES
+	* test-requires: likewise
+	* cpanfile: new
+	* build-requires: new
+	* builder: new
+	* t/00-amazon-credentials.t: new
+	* t/06-security.t: removed
+	* t/07-encryption.t: removed
+
+	[1.3.0]: moved
+	* .includes/version.mk: moved
+	* bin/amazon-credentials.sh.in: moved
+	* bin/get-creds-from-process.in: moved
+	* bin/get-sso-credentials.sh.in: moved
+	* lib/Amazon/Credentials.pm.in: moved
+	* lib/Amazon/Credentials/HTTP/Response.pm.in: moved
+	* lib/Amazon/Credentials/HTTP/UserAgent.pm.in: moved
+	* lib/UnitTestSetup.pm: moved
+	* recommends: moved
+	* requires: moved
+	* t/00-credentials.t: moved
+	* t/01-credentials.t: moved
+	* t/02-credentials.t: moved
+	* t/02-web-identity.t: moved
+	* t/03-container.t: moved
+	* t/04-process.t: moved
+	* t/05-format.t: moved
+	* t/06-security.t: moved
+	* t/07-encryption.t: moved
+	* t/08-imdsv2.t: moved
+	* t/09-live-credentials.t: moved
+	* t/10-logging.t: moved
+	* t/11-order.t: moved
+	* t/12-error.t: moved
+	* t/13-env.t: moved
+	* t/14-utils.t: moved
+	* test-requires: moved
+	* bin/amazon-credentials.in: moved
+
+	[1.3.0]: modified
+	* t/01-credentials.t: whitespace
+	* t/02-web-identity.t: no_passkey_warning
+	* t/04-process.t
+	- run from build directory
+	* test-requires
+	- +Crypt::CBC, Crypt::Cipher::AES
+	* buildspec.yml
+	- updated for new build, +UnitTestSetup.pm
+	* .gitignore
+	- ignore build artifacts
+	* lib/Amazon/Credentials.pm.in
+	- remove encryption feature, replaced with closure
+	- replace accessors with accessors that set and retrieve code ref
+	(_init_credentials): new
+	(new)
+	- remove all encryption related code
+	(safe_dumper): remove references to insecure option
+	(set_passkey): removed
+	(get_passkey): removed
+	(_fetch_passkey): removed
+	(_init_encryption): removed
+	(_crypt): removed
+	(decrypt): removed
+	(encrypt): removed
+	(create_passkey): removed
+	(rotate_passkey): removed
+	(rotate_credentials): removed
+	* t/02-credentials.t: remove insecure option
+	* t/12-error.t: localize $EVAL_ERROR
+	* UnitTest.pm
+	- refactored
+	* buildspec.yml
+	* t/01-credentials.t
+	- use UnitTest, no qw
+	* t/02-credentials.t: likewise
+	* t/03-container.t: likewise
+	* t/04-process.t: likewise, create process executable
+	* t/05-format.t: likewise
+	* t/10-logging.t: likewise
+	* t/11-order.t: likewise
+	* t/12-error.t: likewise
+	* t/13-env.t: likewise
+	* t/14-utils.t: likewise
+
+	[1.3.0]: deleted
+	* bin/get-sso-credentials.sh.in: deleted
+	* bin/get-creds-from-process.in: deleted
+	* check-expired-token.pl: deleted
+	* Makefile.am: deleted
+	* TBD: deleted
+	* autotools/ads_PERL_INCLUDES.m4: deleted
+	* autotools/ads_PERL_LIBDIR.m4: deleted
+	* autotools/ads_PERL_MODULE.m4: deleted
+	* autotools/ads_PROG_PERL.m4: deleted
+	* autotools/am_rpm_build_mode.m4: deleted
+	* autotools/ax_am_conditional_example.m4: deleted
+	* autotools/ax_deps_check.m4: deleted
+	* autotools/ax_distcheck_hack.m4: deleted
+	* autotools/ax_rpmbuild_check.m4: deleted
+	* bootstrap: deleted
+	* perl-Amazon-Credentials.spec.in: deleted
+	* configure.ac: deleted
+	* cpan/Makefile.am: deleted
+	* cpan/buildspec.yml: deleted
+	* cpan/extra-files: deleted
+	* release-notes.mk: deleted
+	* src/Makefile.am: deleted
+	* src/main/Makefile.am: deleted
+	* src/main/bash/Makefile.am: deleted
+	* src/main/bash/bin/.gitignore: deleted
+	* src/main/bash/bin/Makefile.am: deleted
+	* src/main/perl/Makefile.am: deleted
+	* src/main/perl/lib/Makefile.am: deleted
+	* src/main/perl/t/Makefile.am: deleted
+	* target-repo: deleted
+	* test-aws-credentials.pl: deleted
+
 Mon May  4 16:34:38 2026  Rob Lauer  <rclauer@gmail.com>
 
 	[1.2.1]:
-	* ChangeLog: modified
 	* README.md: modified
 	* VERSION: modified
 	* src/main/perl/lib/Amazon/Credentials.pm.in

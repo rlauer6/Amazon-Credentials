@@ -1,49 +1,35 @@
 # README
 
-This is the README file for the `perl-Amazon-Credentials` project.
-
-![badge](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoia3BvcFcwdlRBS0Q4eXRCempKZCtUNTBraGZOdVg1ajJ4dTVQbUZDRzdDWlJYNEJpd0FpMnk4UHZWWUpwRnM5Qk5rUmRNeXFReE9uZWp6M2VpeVIxUWVvPSIsIml2UGFyYW1ldGVyU3BlYyI6Img1bWNSVGIvZjBQTzlHazEiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)
+This is the README-BUILD file for the `Amazon-Credentials` project.
 
 ---
 
-# DESCRIPTION
+Version 1.3.0 introduces a build based on
+[`CPAN::Maker::Bootstrapper`](https://github.com/rlauer6/CPAN-Maker-Bootstrapper.git)
 
-Perl module to find AWS credentials either in your environment, from
-your credentials files, your EC2 or container's metadata .  See:
+# Build Dependencies
 
-```
-perldoc Amazon::Credentials
-```
+* GNU make
+* `git`
+* Perl Modules
+  * `Module::ScanDeps::Static`
+  * `Markdown::Render`
+  * `CPAN::Maker`
+  * `Pod::Extract`
+  * ...and possibly others
 
-# Building an rpm
-
-Assuming you have an `rpmbuild` environment setup for yourself:
-
-```
-git clone https://github.com/rlauer6/perl-Amazon-Credentials.git
-cd perl-Amazon-Credentials
-./bootstrap
-./configure --enable-rpmbuild
-make dist
-rpmbuild -tb perl-Amazon-Credentials-1.0.17.tar.gz
-```
-
-# Building CPAN tarball
-
-See https://github.com/rlauer6/make-cpan-dist for more information
-about creating CPAN distributions from these RPM based projects
-
-This project contains a `makefile` that will help you create the CPAN
-tarball. Try this recipe:
+The easiest way to install the module is using `cpanm`.
 
 ```
-git clone https://github.com/rlauer6/perl-Amazon-Credentials.git
-cd perl-Amazon-Credentials
-./bootstrap
-./configure
-make cpan
+cpanm -n -v Amazon::Credentials
 ```
 
-# Author
+If you want to build the tarball, first install the dependencies listed,
+then:
 
-Rob Lauer <rclauer@gmail.com>
+```
+git clone https://github.com/rlauer6/Amazon-Credentials.git
+cd Amazon-Credentials
+make quick
+cpanm -n -v Amazon-Credentials*.tar.gz
+```

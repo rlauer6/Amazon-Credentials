@@ -1,33 +1,32 @@
-version: 0.2
-
-environment_variables:
-  plaintext:
-    PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-phases:
-  install:
-    commands:
-      - yum install autotools automake install -y util-linux rpm-build tree which
-  pre_build:
-    commands:
-      - mkdir /root/rpmbuild
-      - echo -e "%_topdir /root/rpmbuild" > /root/.rpmmacros
-  build:
-    commands:
-      - env
-      - test -e 'bootstrap' && ./bootstrap 
-      - test -e 'bootstrap' || autoreconf -i --force
-      - ./configure --prefix=/usr --with-perl5libdir --enable-rpmbuild --disable-perldeps
-      - make dist
-      - echo $(basename $(ls -1 *.tar.gz | head -1) .tar.gz) > package-name
-      - rpmbuild -tb $(ls -1 *.tar.gz | head -1)
-      - test -e target-repo && mkdir /root/repo
-      - find ~/rpmbuild/RPMS/ -name '*.rpm' | sed 's|/root/rpmbuild/RPMS/||' > "/root/repo/$(cat package-name).lst"
-      - test -e target-repo && echo "YRB_EXTRA=\"$CODEBUILD_WEBHOOK_HEAD_REF|$CODEBUILD_SOURCE_REPO_URL\"" >> target-repo
-      - test -e target-repo && cp target-repo "/root/repo/$(cat package-name).repo"
-      - tree /root
-      - cat /root/repo/$(cat package-name).lst
-artifacts:
-  discard-paths: yes
-  files:
-    - /root/rpmbuild/RPMS/**/*
-    - /root/repo/*
+---
+project:
+  description: Amazon::Credentials
+  author:
+    name: Rob Lauer
+    mailto: rclauer@gmail.com
+pm-module: Amazon::Credentials
+min-perl-version: 5.010
+dependencies:
+  requires: requires
+  test-requires: test-requires
+path:
+  pm-module: lib
+  exe-files: bin
+  tests: t
+extra-files:
+  - ChangeLog
+  - UnitTest.pm
+  - release-notes-1.3.0.md
+  - README-TESTING.md
+  - README-BUILD.md
+  - share:
+      - README.md
+resources:
+  bugtracker:
+    mailto: rclauer@gmail.com
+    web: https://github.com/rlauer6/Amazon-Credentials/issues
+  homepage: https://github.com/rlauer6/Amazon-Credentials
+  repository:
+    type: git
+    url: git@github.com:rlauer6/Amazon-Credentials.git
+    web: https://github.com/rlauer6/Amazon-Credentials
