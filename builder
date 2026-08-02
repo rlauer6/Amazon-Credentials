@@ -5,27 +5,33 @@
 ########################################################################
 #
 # To run locally:
+
+# Assuming your project directory name is the same as your repo name
+# repo_name=$(basename -s .git "$(git remote get-url origin)")
+# docker run --rm -it \
+#   -v "$(pwd)/builder:/builder" \
+#   -v "$(pwd):/$(basename $(pwd)) \
+#   -e GITHUB_REF_NAME=master \
+#   -e REPO=$(basename  -s .git "$(git remote get-url origin)")
+#   -e INSTALLER=cpm \
+#   debian:trixie \
+#   /bin/bash
 #
-#   docker run --rm -v "$(pwd)/builder:/builder:ro" \
-#      -e BUILD_BRANCH=$(git branch --show-current) \
-#      debian:trixie \
-#      bash /builder https://github.com/rlauer6/Amazon-S3-Lite.git
-#
-#  --or--
+# --or--
 #
 #  make build-ci
 #
 ########################################################################
 
-INSTALLER="${INSTALLER:-cpm install -g}"
+INSTALLER="${INSTALLER:-cpm install -g --no-prebuilt --show-build-log-on-failure --verbose}"
 
 ########################################################################
 function install_deps {
 ########################################################################
     
-    EXTRA_DEPS=(CPAN::Maker@1.9.1)
+    EXTRA_DEPS=(CPAN::Maker CPAN::Maker::Bootstrapper)
     EXTRA_DEPS+=(File::ShareDir File::ShareDir::Install)
-    EXTRA_DEPS+=(Pod::Markdown Markdown::Render@2.0.4)
+    EXTRA_DEPS+=(Pod::Markdown Markdown::Render)
 
     if [[ -n "$PERLCRITICRC" ]]; then
         EXTRA_DEPS+=(Perl::Critic Perl::Critic::Policy::Compatibility::PodMinimumVersion)
@@ -97,9 +103,11 @@ else
 fi
 
 if [[ -n "$REPO" ]]; then
-    git clone $REPO
-
-    cd $(basename $REPO .git)
+    dir=$(basename $REPO .git)
+    if ! [[ -d "$dir" ]]; then
+        git clone $REPO
+    fi
+    cd $dir
 else
    git rev-parse --git-dir > /dev/null 2>&1 \
         || { echo "ERROR: not a git repository and no REPO specified" >&2; exit 1; }
@@ -107,9 +115,13 @@ fi
 
 BRANCH_NAME="${BUILD_BRANCH:-${GITHUB_REF_NAME:-}}"
 if [[ -n "${BRANCH_NAME}" ]]; then
-    git checkout "$BRANCH_NAME"
+    if ! [[ -d ".git" ]]; then
+        echo "checking out $BRANCH_NAME"
+        git checkout "$BRANCH_NAME"
+    fi
 else
    BRANCH_NAME=$(git branch --show-current)
+   echo "BRANCH: $BRANCH_NAME"
 fi
 
 if [[ -e build-apt-deps ]]; then
@@ -194,4 +206,4 @@ install_deps
 # export NO_ECHO=""
 ########################################################################
 
-time make
+time make CMB_VERSION_DRIFT=ignore NO_ECHO=
