@@ -39,3 +39,16 @@ git: ## initializes a git repository and commits artifacts (NO_COMMIT=1 to stop 
 	  commit -m 'BigBang'; \
 	fi
 
+repo: ## creates a new GitHub repository
+	@if [[ -z "$(GITHUB_ACTIONS)" ]]; then \
+	  echo "gha-aws is not available: cpan GitHub::Actions::AWS"; \
+	  exit 1; \
+	fi; \
+	if [[ -z "$REPO" ]]; then \
+	  echo "usage: make repo REPO=repo-name PUBLIC=1"; \
+	  exit 1; \
+	fi; \
+	if [[ -n "$$PUBLIC"; then \
+	  PUBLIC="--public"; \
+	fi; \
+	$(GITHUB_ACTIONS) $$PUBLIC --repo $$REPO

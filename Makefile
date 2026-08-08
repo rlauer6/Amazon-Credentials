@@ -35,6 +35,7 @@ MD_UTILS       := $(shell command -v markdown-render)
 POD2MARKDOWN   := $(shell command -v pod2markdown)
 PODEXTRACT     := $(shell command -v podextract)
 SCANDEPS       := $(shell command -v scandeps-static)
+GITHUB_ACTIONS := $(shell command -v gha-aws)
 
 ifeq ($(MD_UTILS),)
     $(warning Markdown::Render is not installed - run: cpanm Markdown::Render to generate .md files from pod)
@@ -74,6 +75,8 @@ $(eval $(call find-files,BIN_FILES,bin,*.in))
 $(eval $(call find-files,TESTS,t,*.t))
 $(eval $(call find-files,SOURCE_FILES,lib bin,*.p[ml].in))
 
+SOURCE_FILES_IN := $(addsuffix .in,$(SOURCE_FILES))
+
 POD_MODULES = $(PERL_MODULES:.pm=.pod)
 
 TARBALL = $(PROJECT_NAME)-$(VERSION).tar.gz
@@ -90,12 +93,12 @@ DEPS += \
     cpanfile \
     test-requires \
     $(UNIT_TEST_NAME) \
-    update-available \
     ChangeLog
 
 .DEFAULT_GOAL := $(TARBALL)
 
-all: update-available 
+.PHONY: all
+all: $(TARBALL)
 
 include .includes/perl.mk
 
@@ -130,8 +133,7 @@ cpanfile: cpanfile.requires cpanfile.suggests cpanfile.recommends
 	  cat $$a >>$@; \
 	done
 
-$(TARBALL): $(DEPS) \
-    check-syntax \
+$(TARBALL): $(DEPS) | update-available \
     $(if $(tidy_on), $(PERL_MODULES:%=%.tdy) $(PERL_BIN_FILES:%=%.tdy)) \
     $(if $(critic_on), $(PERL_MODULES:%=%.crit) $(PERL_BIN_FILES:%=%.crit))
 	$(NO_ECHO)if [[ -z "$(NO_COLOR)" ]]; then \
@@ -194,25 +196,13 @@ README.md: README.md.in
 	fi
 endif
 
-modulino.tmpl:
-	$(NO_ECHO)modulino_path=$$(perl -MFile::ShareDir=dist_file -e 'print dist_file(q{CPAN-Maker-Bootstrapper}, q{modulino.tmpl});' 2>/dev/null); \
-	cp $$modulino_path $@
+-include .includes/modulino.mk
 
-.PHONY: modulino
-modulino: modulino.tmpl ## creates a bash script that calls your modulino (MODULE_NAME=module ALIAS=name)
-	$(NO_ECHO)trap 'rm -f modulino.tmpl' EXIT; \
-	MODULE_NAME="$(MODULE_NAME)"; \
-	ALIAS="$${ALIAS:-$$MODULE_NAME}"; \
-	binfile=$$(echo "$$ALIAS" | perl -npe 's/::/\-/g;'); \
-	modulino="bin/$${binfile,,}"; \
-	sed -e "s/[@]MODULE_NAME[@]/$$MODULE_NAME/" \
-	    -e "s/[@]ALIAS[@]/$$ALIAS/" $< > "$${modulino}.in"; \
-	test -e .gitignore && { grep -q "$$modulino" .gitignore || echo "$$modulino" >> .gitignore; }; \
-	echo "$$modulino"
+-include .includes/bash-completion.mk
 
 .INTERMEDIATE: requires.raw recommends.raw suggests.raw test-requires.raw
 
-requires.raw recommends.raw suggests.raw &: $(SOURCE_FILES) ## single scan producing all three library dependency tiers
+requires.raw recommends.raw suggests.raw &: $(SOURCE_FILES_IN) ## single scan producing all three library dependency tiers
 	$(NO_ECHO)printf '%s\n' $(SOURCE_FILES) > file_list.tmp; \
 	$(SCANDEPS) $(MIN_PERL_VERSION_FLAG) \
 	  --raw \
@@ -303,6 +293,7 @@ CLEANFILES += \
     *.xxx \
     *.raw \
     extra-files \
+    extra-files.mk \
     provides \
     module.pm.tmpl \
     release-*.{lst,diffs} \
@@ -380,9 +371,15 @@ check: $(GSOURCE_FILES) ## syntax check and create source from .in file
 # so there's no chicken-and-egg with $(PERL_MODULES) needing to be
 # built before deps.mk can be regenerated, and 'make clean' can never
 # trigger a rebuild through this include (clean doesn't touch .pm.in).
-deps.mk: $(SOURCE_FILES)
+deps.mk: $(SOURCE_FILES_IN)
 	$(NO_ECHO)cmb create-deps > $@
 
 .PHONY: package
 package: clean ## run lint & scan
 	$(MAKE) LINT=on SCAN=on
+
+# extra-files.mk:  $(TARBALL): share/foo.tpl share/bar.tpl ...
+extra-files.mk: buildspec.yml extra-files
+	$(NO_ECHO)printf '$$(TARBALL): %s\n' "$$(awk 'NF{print $$1}' extra-files | tr '\n' ' ')" > $@
+
+-include extra-files.mk

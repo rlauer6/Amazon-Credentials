@@ -1,3 +1,26 @@
+Sat Aug  8 10:13:38 2026  Rob Lauer  <rclauer@gmail.com>
+
+	[1.3.2]:
+	* release-notes.md: updated
+	* release-notes/release-notes-1.3.2.md: new
+	* .gitignore: updated by CPAN::Maker::Bootstrapper
+	* .includes/git.mk: likewise
+	* .includes/help.mk: likewise
+	* .includes/perl.mk: likewise
+	* .includes/release-notes.mk: likewise
+	* .includes/update.mk: likewise
+	* .includes/modulino.mk: likewise
+	* .includes/bash-completion.mk: likewise
+	* Makefile: likewise
+	* README.md: modified
+	* VERSION: modified
+	* lib/Amazon/Credentials.pm.in
+	(get_creds_from_web_identity)
+	- ||, not // for default region
+	- added debug statements
+	- fix $rsp->code, not $rsp->status_line which prevent seeing actual errors
+	(_decode_jwt_claims): new
+
 Sat Aug  1 17:04:02 2026  Rob Lauer  <rclauer@gmail.com>
 
 	[1.3.1]:
