@@ -123,7 +123,7 @@ The default credential search order is:
 
 # VERSION
 
-This document refers to version 1.3.2 of
+This document refers to version 1.3.3 of
 [Amazon::Credentials](https://metacpan.org/pod/Amazon%3A%3ACredentials).
 
 # METHODS AND SUBROUTINES

@@ -41,3 +41,5 @@ buildspec.yml.tmpl
 module.pm.tmpl
 test.t.tmpl
 extra-files.mk
+cpanfile.snapshot
+local/**
