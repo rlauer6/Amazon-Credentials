@@ -9,6 +9,8 @@ SHELL := /bin/bash
 # this the user's version from their VERSION file
 VERSION := $(shell test -e VERSION || echo 1.0.0 > VERSION; cat VERSION)
 
+PACKAGE_VERSION = $(VERSION)
+
 # this is the current version in your Perl path (but not necessarily the version that produced this Makefile)
 BOOTSTRAPPER_VERSION := $(shell perl -MCPAN::Maker::Bootstrapper -e 'print CPAN::Maker::Bootstrapper->VERSION;' 2>/dev/null || true) 
 
@@ -17,6 +19,8 @@ config.mk: ;
 -include config.mk
 
 MODULE_NAME  ?= $(shell SOURCE=$$(pwd) perl -MCwd=abs_path -MFile::Basename=basename -e '$$m=basename(abs_path($$ENV{SOURCE})); $$m =~s/\-/::/g; print $$m')
+
+export MODULE_NAME PACKAGE_VERSION
 
 MODULE_PATH = lib/$(shell echo $(MODULE_NAME) | perl -npe 's/::/\//g;').pm
 
@@ -181,9 +185,9 @@ $(TARBALL): $(DEPS) | update-available \
 	$(CPAN_MAKER) $$SKIP_TESTS -l $(LOG_LEVEL) $$COLOR -b $<
 
 $(MODULE_PATH).in:
+	$(call gen-vars-file,$@.vars);
 	$(NO_ECHO)tmpl=$$(perl -MFile::ShareDir=dist_file -e 'print dist_file(q{CPAN-Maker-Bootstrapper}, q{class-module.pm.tmpl})' 2>/dev/null); \
 	[[ -n "$(STUB)" ]] && tmpl="$(STUB)"; \
-	$(call gen-vars-file,$@.vars); \
 	trap 'rm -f $@.vars' EXIT; \
 	mkdir -p $$(dirname $@); \
 	$(BOOTSTRAPPER) resolve-vars "$$tmpl" $(TEMPLATE_VARS) > $@
@@ -413,7 +417,10 @@ package: clean ## run lint & scan
 
 # extra-files.mk:  $(TARBALL): share/foo.tpl share/bar.tpl 
 
-extra-files.mk: buildspec.yml
+extra-files:
+	$(NO_ECHO)touch $@
+
+extra-files.mk: buildspec.yml | extra-files
 	$(NO_ECHO)if [[ -e extra-files ]]; then \
 	  printf '$$(TARBALL): %s\n' "$$(awk 'NF{print $$1}' extra-files | tr '\n' ' ')" > $@; \
 	else \

@@ -1,3 +1,61 @@
+Thu Sep  3 08:42:17 2026  Rob Lauer  <rclauer@gmail.com>
+
+	[1.4.0]:
+	* release-notes.md: updated
+	* release-notes/release-notes-1.4.0.md: new
+	* README.md: generated
+	* VERSION: bump
+	* Makefile: updated by CPAN::Maker::Bootstrapper
+	* builder: likewise
+	* lib/Amazon/Credentials.pm.in
+	- major rework of logging to prevent credential leakage
+	- pod cleanups, typos cleanups
+	- use JSON, not JSON::PP
+	(get_default_region): default to DEFAULT_REGION
+	(set_credentials)
+	- refactored to remove nested eval {}
+	(find_credentials)
+	- always return a hashref
+	(populate_creds): do not mutate source
+	(get_region_from_config)
+	- get region from section once we find a section
+	(get_creds_from_ini_file)
+	- likewise
+	- support sso profiles
+	(get_creds_from_role)
+	- refactored to eliminate loop
+	(get_creds_from_web_identity)
+	- always use regional STS endpoint
+	(choose): new
+	(refresh_token)
+	- no need to test for ECS
+	(get_creds_from_sso): new
+	(_sso_cache_key): new
+	(get_role_credentials)
+	- pass region to _get_access_token()
+	(_get_access_token)
+	- replace File::Find with opendir
+	- if multiple token files use most recent (using expireAt)
+	- attempt to refresh expired tokens
+	(_refresh_sso_access_token): new
+	(_write_sso_cache_file): new
+	(_iso8601_utc): new
+	(_parse_expires_at): new
+	(export_credentials)
+	- accept either AWS_ env vars or a credentials object or roleCredentials shape
+	(_sanitize): new
+	* lib/Amazon/Credentials/HTTP/Response.pm.in
+	(status_line): new
+	* lib/Amazon/Credentials/HTTP/UserAgent.pm.in
+	(request): remove ':' flag
+	* test-requires.skip: +Amazon::Credentials, Amazon::Credentials::HTTP::UserAgent
+	* t/15-sso-refresh.t: new
+	* t/10-logging.t: add tests for _sanitize
+	* requirs: -JSON::PP
+	* cpanfile: likewise
+	* t/14-utils.t: fixed to match code that no longer mutates keys
+	* t/02-web-identity.t: fixed to match code that always uses regional endpoint for STS
+
 Tue Aug 18 17:39:47 2026  Rob Lauer  <rclauer@gmail.com>
 
 	[1.3.3]:

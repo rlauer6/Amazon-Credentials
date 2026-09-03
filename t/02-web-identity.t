@@ -394,7 +394,9 @@ SKIP: {
     like $url, qr{sts\.eu-west-1\.amazonaws\.com}, 'uses regional STS endpoint when AWS_DEFAULT_REGION is set';
   };
 
-  subtest 'get_creds_from_web_identity - global STS endpoint for us-east-1' => sub {
+########################################################################
+  subtest 'get_creds_from_web_identity - us-east-1 regional STS endpoint' => sub {
+########################################################################
     my ( $fh, $fname ) = tempfile( UNLINK => 1 );
     print $fh 'fake-jwt';
     close $fh;
@@ -416,10 +418,13 @@ SKIP: {
     $creds_obj->get_creds_from_web_identity;
 
     my $url = $mock_ua->last_request->uri->as_string;
-    like $url, qr{sts\.amazonaws\.com(?!/eu|/ap|/us-west)}, 'uses global STS endpoint for us-east-1';
+
+    like $url, qr{sts[.]us-east-1[.]amazonaws[.]com}, 'uses regional STS endpoint for us-east-1';
   };
 
+########################################################################
   subtest 'web_identity in default search order' => sub {
+########################################################################
     # Verify web_identity slot exists in the dispatch table
     # by confirming the constant includes it
     my $order = Amazon::Credentials::DEFAULT_SEARCH_ORDER();

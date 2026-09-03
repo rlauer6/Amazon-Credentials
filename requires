@@ -7,6 +7,5 @@ Config::Tiny 2.28
 File::HomeDir 1.00
 HTTP::Request 6.00
 HTTP::Tiny 0.088
-JSON::PP 4.16
 POSIX::strptime 0.13
 perl 5.010

@@ -41,6 +41,7 @@
   * [Use Temporary Credentials](#use-temporary-credentials)
   * [Use Granular Credentials](#use-granular-credentials)
   * [Notes on Logging and Debug Mode](#notes-on-logging-and-debug-mode)
+  * [Using the CLI to load credentials](#using-the-cli-to-load-credentials)
 * [INCOMPATIBILITIES](#incompatibilities)
 * [CONTRIBUTING](#contributing)
 * [LICENSE AND COPYRIGHT](#license-and-copyright)
@@ -123,8 +124,7 @@ The default credential search order is:
 
 # VERSION
 
-This document refers to version 1.3.3 of
-[Amazon::Credentials](https://metacpan.org/pod/Amazon%3A%3ACredentials).
+This document refers to version 1.4.0 of [Amazon::Credentials](https://metacpan.org/pod/Amazon%3A%3ACredentials).
 
 # METHODS AND SUBROUTINES
 
@@ -198,13 +198,11 @@ Any of the options can also be retrieved using their corresponding
 
     Set to true for verbose troubleshooting information. Set `logger` to
     a logger that implements a logging interface (ala
-    [Log::Log4perl](https://metacpan.org/pod/Log%3A%3ALog4perl).
+    [Log::Log4perl](https://metacpan.org/pod/Log%3A%3ALog4perl)).
 
 - env - Environment
 
-    If there exists an environment variable $AWS\_PROFILE, then an attempt
-    will be made to retrieve credentials from the credentials file using
-    that profile, otherwise the class will for these environment variables
+    The class will look for these environment variables
     to provide credentials.
 
         AWS_ACCESS_KEY_ID
@@ -221,7 +219,7 @@ Any of the options can also be retrieved using their corresponding
     - ~/.aws/config
     - ~/.aws/credentials
 
-    The class will attempt to resolve credentials by interpretting the
+    The class will attempt to resolve credentials by interpreting the
     information in these two files. You can also specify a profile to use
     for looking up the credentials by passing it into the constructor or
     setting it the environment variable `AWS_PROFILE`.  If no profile is
@@ -253,7 +251,7 @@ Any of the options can also be retrieved using their corresponding
     An array reference containing tokens that specifies the order in which the class will
     search for credentials.
 
-    default:  env, role, container, file
+    default:  env, container, role, web\_identity, file
 
     Example:
 
@@ -261,7 +259,7 @@ Any of the options can also be retrieved using their corresponding
 
 - print\_error
 
-    Whether to print the error if no credenials are found. `raise_error`
+    Whether to print the error if no credentials are found. `raise_error`
     implies `print_error`.
 
     default: true
@@ -305,10 +303,28 @@ Any of the options can also be retrieved using their corresponding
           $aws_creds->refresh_token()
         }
 
+- sso\_role\_name
+
+    The IAM Identity Center role name to use when retrieving SSO
+    credentials. This option is used with `sso_account_id`.
+
+- sso\_account\_id
+
+    The AWS account ID from which to retrieve IAM Identity Center
+    credentials. This option is used with `sso_role_name`.
+
+    When both `sso_role_name` and `sso_account_id` are supplied, the
+    constructor attempts to obtain credentials using the current cached
+    SSO login.
+
+- sso\_region
+
+    SSO region. Defaults to `region` if not set.
+
 - timeout
 
     When looking for credentials in metadata URLs, this parameter
-    specifies the timeout value in seconds for HTTP metadata sevice
+    specifies the timeout value in seconds for HTTP metadata service
     requests.
 
     default: 3s
@@ -448,7 +464,7 @@ Optional:
 The STS call is made without AWS request signing - the OIDC token
 itself authenticates the request, resolving the chicken-and-egg problem
 of needing credentials to obtain credentials. The regional STS endpoint
-is used when `AWS_DEFAULT_REGION` or `AWS_REGION` is set; otherwise
+is used when `AWS_REGION` or `AWS_DEFAULT_REGION` is set; otherwise
 the global `sts.amazonaws.com` endpoint is used.
 
 Returns an empty hash if the required environment variables are not set,
@@ -469,11 +485,46 @@ Returns a hash, possibly containing access keys and a token.
 
 ## get\_default\_region
 
-Returns the region of the currently running instance or container.
-The constructor will set the region to this value unless you set your
-own `region` value. Use `get_region` to retrieve the value after
-instantiation or you can call this method again and it will make a
-second call to retrieve the instance metadata.
+    get_default_region()
+
+Returns a default AWS region for the credentials object.
+
+This method is primarily used by the constructor when no region was
+provided explicitly and no region was found in `AWS_REGION` or
+`AWS_DEFAULT_REGION`.
+
+The method resolves a region in the following order:
+
+- 1. Selected AWS configuration profile
+
+    The region configured for the selected profile in `~/.aws/config` is
+    used when available.
+
+- 2. Instance or container metadata
+
+    When credentials were obtained from an IAM role, the method attempts
+    to determine the region from the availability zone reported by the
+    runtime metadata service.
+
+    For EC2 instance-role credentials this information is obtained from
+    the EC2 metadata service. For supported container environments it may
+    be obtained from the container metadata endpoint.
+
+    The availability-zone suffix is removed to produce the corresponding
+    AWS region.
+
+- 3. Default region
+
+    If no region can otherwise be determined, `us-east-1` is returned.
+
+This method does not represent all region resolution performed by
+`Amazon::Credentials`. Some credential providers, including SSO and
+web identity flows, resolve the region needed for their own AWS
+endpoints independently.
+
+Normally callers should use `get_region` to retrieve the region
+selected for an instantiated credentials object rather than calling
+`get_default_region` directly.
 
 ## get\_ec2\_credentials (deprecated)
 
@@ -513,9 +564,9 @@ IAM roles) are returned unchanged.
 ## reset\_credentials
 
 By default this method will remove credentials from the cache if you
-pass a false or no value. Passing a true value will refresh your
-credentials from the original source (equivalent to calling
-`set_credentials`).
+pass a false or no value. Passing a true value causes credentials to
+be rediscovered using the configured credential search order when
+caching is enabled.
 
 ## refresh\_token (deprecated)
 
@@ -523,10 +574,15 @@ use `refresh_credentials()`
 
 ## refresh\_credentials()
 
-Retrieves a fresh set of IAM credentials.
+Retrieves a fresh set of credentials for supported renewable
+credential sources. Currently EC2 instance-role and ECS relative-URI
+container credentials can be refreshed automatically.
+
+Other temporary credential sources may expose expiration information
+but are not yet automatically refreshed by this method.
 
     if ( $creds->is_token_expired ) {
-      $creds->refresh_token()
+      $creds->refresh_credentials;
     }
 
 ## set\_credentials
@@ -564,9 +620,9 @@ After logging in using your SSO credentials...
 
 ## set\_sso\_credentials
 
-    set_sso_options(role-name, account-id, region)
+    set_sso_credentials(role-name, account-id, region)
 
-Calls `get_role_credentials` and set AWS credenital environment
+Calls `get_role_credentials` and sets AWS credential environment
 variables. Region is optional, all other parameters are required.
 
     use Amazon::Credentials qw(set_sso_credentials)
@@ -609,24 +665,23 @@ described throughout this documentation.
 
 # BUGS AND LIMITATIONS
 
-[Amazon::Credentials](https://metacpan.org/pod/Amazon%3A%3ACredentials) will **not** attempt to retrieve temporary
-credentials for profiles that specify a role. If for example you
-define a role in your credentials file thusly:
+Amazon::Credentials does not currently resolve profile-based STS
+AssumeRole chains using role\_arn, source\_profile, or
+credential\_source.
 
-    [developer]
+For example:
 
-     role_arn = arn:aws:iam::123456789012:role/developer-access-role
-     source_profile = dev
+    [profile developer]
+    role_arn = arn:aws:iam::123456789012:role/developer-access-role
+    source_profile = dev
 
-The module will not return credentials for the _developer_
-profile. While it would be theoretically possible to return those
-credentials, in order to assume a role, one needs credentials (chicken
-and egg problem).
+The `dev` profile can provide the credentials required to call
+`AssumeRole`, but Amazon::Credentials does not yet perform that profile
+chaining automatically.
 
-Note that `get_creds_from_web_identity` resolves this problem for
-OIDC-federated environments (EKS IRSA, GitHub Actions) by calling STS
-`AssumeRoleWithWebIdentity`, which does not require AWS signing - the
-OIDC token authenticates the request directly.
+`get_creds_from_web_identity` supports the separate
+`AssumeRoleWithWebIdentity` flow used by OIDC-federated environments
+such as EKS IRSA and GitHub Actions.
 
 # DEPENDENCIES
 
@@ -787,6 +842,42 @@ use the `DEBUG` environment variable to enable debug output. You must
 explicitly pass `debug => 1` to the constructor. This prevents
 upstream modules that set `DEBUG` from inadvertently triggering debug
 mode in [Amazon::Credentials](https://metacpan.org/pod/Amazon%3A%3ACredentials).
+
+## Using the CLI to load credentials
+
+The modulino writes shell `export` statements to STDOUT so they can be
+evaluated directly into your current shell:
+
+    eval "$(amazon-credentials --role AWSAdministratorAccess --account 000000000)"
+
+Prefer this `eval` form over running the command bare and pasting its
+output: with `eval` the secret values are never typed as a command, so
+they do not land in your shell history. Running `amazon-credentials` on
+its own instead prints the access key, secret, and session token to your
+terminal, where they remain in scrollback (and in any screen share,
+`script` capture, or terminal log).
+
+A few cautions:
+
+- **Check for success.** `eval "$(...)"` silently evaluates nothing
+if the command produces no output, leaving your shell with stale or no
+credentials. Capture first if that matters:
+
+        creds=$(amazon-credentials -r ROLE -a ACCOUNT) && eval "$creds"
+
+- **A current or refreshable SSO login is required.** If the cached
+access token has expired and the cache contains a valid refresh token and
+client registration, Amazon::Credentials attempts to refresh it automatically.
+If no token can be refreshed, run `aws sso login` and retry.
+- **The credentials are temporary.** SSO role credentials expire
+(typically within the hour). Re-run the command to refresh; the exported
+variables are inherited by every child process started from that shell
+until then.
+- **Do not run under `set -x`.** Shell trace mode echoes the
+expanded `export` lines, defeating the point of `eval`.
+- The `--role` and `--account` arguments are not secret and are
+safe to keep in scripts or history; only the emitted values are
+sensitive.
 
 # INCOMPATIBILITIES
 

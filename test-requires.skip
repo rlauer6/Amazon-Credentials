@@ -1,1 +1,3 @@
 UnitTest
+Amazon::Credentials
+Amazon::Credentials::HTTP::Response 
