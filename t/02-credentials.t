@@ -1,108 +1,174 @@
 use strict;
 use warnings;
 
-use lib qw{ . lib};
+use 5.010;
 
-use Test::More tests => 6;
+use Test::More;
+use POSIX qw(strftime);
 
-use Data::Dumper;
-use Date::Format;
-use JSON;
-
-use UnitTest;
-
-BEGIN {
-  {
-    no strict 'refs'; ## no critic
-
-    *{'HTTP::Request::new'}       = sub { bless {}, 'HTTP::Request'; };
-    *{'HTTP::Request::request'}   = sub { HTTP::Response->new; };
-    *{'HTTP::Request::headers'}   = sub { bless {}, 'HTTP::Headers'; };
-    *{'HTTP::Request::content'}   = sub {''};
-    *{'HTTP::Request::method'}    = sub {''};
-    *{'HTTP::Request::uri'}       = sub {''};
-    *{'HTTP::Request::as_string'} = sub {''};
-
-    *{'HTTP::Headers::scan'}        = sub { };  # no-op - no real headers to pass through
-    *{'HTTP::Response::new'}        = sub { bless {}, 'HTTP::Response'; };
-    *{'HTTP::Response::is_success'} = sub { TRUE; };
-
-    *{'Amazon::Credentials::HTTP::UserAgent::new'}     = sub { bless {}, 'Amazon::Credentials::HTTP::UserAgent'; };
-    *{'Amazon::Credentials::HTTP::UserAgent::request'} = sub { HTTP::Response->new; };
-
-    ## use critic
-  }
-
-  use Module::Loaded;
-
-  mark_as_loaded(HTTP::Request);
-  mark_as_loaded(HTTP::Response);
-  mark_as_loaded(Amazon::Credentials::HTTP::UserAgent);
-
-  use_ok('Amazon::Credentials');
-}
-
-# +-------------------------+
-# | MAIN SCRIPT STARTS HERE |
-# +-------------------------+
-
-init_test;
-
-my $creds = Amazon::Credentials->new(
-  { profile => 'bar',
-    order   => [qw/file/],
-    debug   => $ENV{DEBUG} ? 1 : 0,
-    imdsv2  => 0
-  }
-);
-
-ok( ref($creds), 'find credentials - file' );
-
-my %new_creds = (
-  aws_access_key_id     => 'biz-aws-access-key-id',
-  aws_secret_access_key => 'biz-aws-secret-access-key',
-  token                 => 'biz',
-  expiration            => format_time( -5 + FIVE_MINUTES ),
-);
-
-$creds->set_credentials( \%new_creds );
-
-ok( $creds->is_token_expired, 'is_token_expired() - yes?' )
-  or diag( Dumper [ $creds->get_expiration(), format_time() ] );
-
-# is_expired() should be true 5 or less minutes before expiration time
-$creds->set_expiration( format_time( 5 + FIVE_MINUTES ) );
-
-ok( !$creds->is_token_expired, 'is_token_expired() - no?' )
-  or diag( Dumper [ $creds->get_expiration(), format_time ] );
-
-# expire token
-$creds->set_expiration( format_time( -5 + FIVE_MINUTES ) );
-
-ok( $creds->is_token_expired, 'is_token_expired() - reset as expired' )
-  or diag( Dumper [ $creds->get_expiration(), format_time ] );
-
-$new_creds{AccessKeyId}     = 'buz-aws-access-key-id';
-$new_creds{Expiration}      = format_time( 5 + FIVE_MINUTES );
-$new_creds{SecretAccessKey} = 'buz-aws-secret-access-key';
-$new_creds{Token}           = 'buz';
-
-my $content = encode_json( \%new_creds );
+use_ok('Amazon::Credentials');
 
 {
-  no strict 'refs'; ## no critic
 
-  my $response = [ 'role', $content ];
-  *{'HTTP::Response::content'} = sub { shift @{$response}; };
+  package TestSSOProvider;
+
+  sub credentials {
+    my ($self) = @_;
+
+    return {
+      aws_access_key_id     => $self->{aws_access_key_id},
+      aws_secret_access_key => $self->{aws_secret_access_key},
+      token                 => $self->{token},
+      region                => $self->{region},
+      source                => $self->{source},
+    };
+  }
+
+  sub get_region     { return $_[0]->{region}; }
+  sub get_source     { return $_[0]->{source}; }
+  sub is_refreshable { return 1; }
 }
 
-$creds->set_role('role');
+{
 
-local $ENV{AWS_EC2_METADATA_DISABLED} = 'false';
+  package Test::RefreshableProvider;
 
-$creds->refresh_token;
+  sub new {
+    my ($class) = @_;
 
-ok( !$creds->is_token_expired, 'refresh_token()' )
-  or diag( Dumper [ $creds->get_expiration(), format_time ] );
+    return bless {
+      credentials => {
+        aws_access_key_id     => 'OLD_ACCESS_KEY',
+        aws_secret_access_key => 'OLD_SECRET_KEY',
+        token                 => 'OLD_TOKEN',
+      },
+    }, $class;
+  }
+
+  sub is_refreshable {
+    return 1;
+  }
+
+  sub refresh_credentials {
+    my ($self) = @_;
+
+    $self->{credentials} = {
+      aws_access_key_id     => 'NEW_ACCESS_KEY',
+      aws_secret_access_key => 'NEW_SECRET_KEY',
+      token                 => 'NEW_TOKEN',
+    };
+
+    return $self;
+  }
+
+  sub credentials {
+    my ($self) = @_;
+
+    return $self->{credentials};
+  }
+
+  sub get_expiration {
+    my ($self) = @_;
+
+    return $self->{expiration};
+  }
+
+  sub set_expiration {
+    my ( $self, $expiration ) = @_;
+
+    $self->{expiration} = $expiration;
+
+    return $self;
+  }
+}
+
+my $credentials = Amazon::Credentials->new(
+  aws_access_key_id     => 'TEST_ACCESS_KEY',
+  aws_secret_access_key => 'TEST_SECRET_KEY',
+);
+
+isa_ok $credentials, 'Amazon::Credentials', 'credentials object';
+
+my $provider = Test::RefreshableProvider->new;
+
+$credentials->set_provider($provider);
+
+my $expires_soon = strftime( '%Y-%m-%dT%H:%M:%SZ', gmtime( time + 60 ) );
+
+$credentials->set_expiration($expires_soon);
+
+ok $credentials->is_token_expired, 'is_token_expired() - yes?';
+
+my $expires_later = strftime( '%Y-%m-%dT%H:%M:%SZ', gmtime( time + 600 ) );
+
+$credentials->set_expiration($expires_later);
+
+ok !$credentials->is_token_expired, 'is_token_expired() - no?';
+
+my $expired = strftime( '%Y-%m-%dT%H:%M:%SZ', gmtime( time - 60 ) );
+
+$credentials->set_expiration($expired);
+
+ok $credentials->is_token_expired, 'is_token_expired() - reset as expired';
+
+$credentials->refresh_token;
+
+is_deeply(
+  $credentials->credential_keys,
+  { AWS_ACCESS_KEY_ID     => 'NEW_ACCESS_KEY',
+    AWS_SECRET_ACCESS_KEY => 'NEW_SECRET_KEY',
+    AWS_SESSION_TOKEN     => 'NEW_TOKEN',
+  },
+  'refresh_token()',
+);
+
+########################################################################
+subtest 'legacy SSO constructor options' => sub {
+########################################################################
+  require Amazon::Credentials::Provider::SSO;
+
+  my %seen;
+
+  ## no critic
+  no warnings 'redefine';
+  no warnings 'once';
+
+  local *Amazon::Credentials::Provider::SSO::new = sub {
+    my ( $class, @args ) = @_;
+
+    my $options = ref $args[0] ? $args[0] : {@args};
+
+    %seen = %{$options};
+
+    return bless {
+      aws_access_key_id     => 'sso-access',
+      aws_secret_access_key => 'sso-secret',
+      token                 => 'sso-token',
+      region                => 'us-east-1',
+      source                => 'sso',
+      },
+      'TestSSOProvider';
+  };
+
+  my $credentials = Amazon::Credentials->new(
+    sso_role_name  => 'AWSAdministratorAccess',
+    sso_account_id => '123456789012',
+    sso_region     => 'us-east-1',
+  );
+
+  isa_ok( $credentials->get_provider, 'TestSSOProvider', );
+
+  is( $seen{sso_role_name}, 'AWSAdministratorAccess', 'SSO role name propagated', );
+
+  is( $seen{sso_account_id}, '123456789012', 'SSO account id propagated', );
+
+  is( $seen{sso_region}, 'us-east-1', 'SSO region propagated', );
+
+  is( $credentials->get_aws_access_key_id, 'sso-access', 'facade loaded SSO access key', );
+
+  return;
+};
+
+done_testing;
 
 1;

@@ -1,6 +1,9 @@
 +Test::Without::Module 0
+Class::Accessor::Fast 0.51
 Date::Format 2.24
 JSON 4.10
 Log::Log4perl 1.57
 Log::Log4perl::Level 0
+Role::Tiny::With 2.002004
 Test::Output 1.036
+perl 5.010

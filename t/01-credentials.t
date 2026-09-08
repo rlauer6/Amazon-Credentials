@@ -36,7 +36,7 @@ is( $creds->get_aws_access_key_id, 'bar-aws-access-key-id', 'retrieve profile' )
 
 is( $creds->get_region, 'us-east-1', 'region' );
 
-is( $creds->get_source, '.aws/credentials' )
+is( $creds->get_source, 'config' )
   or diag( Dumper [$creds] );
 
 1;

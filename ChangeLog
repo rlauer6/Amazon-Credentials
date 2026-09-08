@@ -1,3 +1,64 @@
+Tue Sep  8 13:20:32 2026  Rob Lauer  <rclauer@gmail.com>
+
+	[2.0.0]:
+	* README.md: generated
+	* VERSION: bump
+	* release-notes.md: updated
+	* release-notes/release-notes-2.0.0.md: new
+	* requires
+	- +Amazon::Signature4::Lite, Role::Tiny, Role::Tiny::With, URI::Escape
+	* cpanfile: likewise
+	* deps.mk: generated
+	* test-requires
+	- +Class::Accessor::Fast, Role::Tiny::With
+	* test-requires.skip
+	- Amazon::API::*
+	* lib/Amazon/Credentials.pm.in
+	- POD updates based on architecture change, new features
+	- complete rearchitecture of credential discover using providers
+	* t/01-credentials.t: source is config, not the file (because we merge config/credentials)
+	* t/02-credentials.t: updated for provider support
+	* t/02-web-identity.t: move most tests to t/22
+	* t/03-container.t: removed find_credentials() test
+	* t/10-logging.t
+	- need to pass credentials
+	- sanitize, not _sanitize now
+	* t/11-order.t
+	- new subtests
+	- capture STDERR output
+	* t/12-error.t
+	- capture STDERR output
+	* t/13-env.t
+	- whitespace
+	- no longer get region from config
+	* t/14-utils.t
+	- remove testing of populate_creds() since that was removed
+	* t/15-sso-refresh.t: deleted
+	* lib/Amazon/Credentials/Provider.pm.in: new
+	* lib/Amazon/Credentials/Provider/AssumeRole.pm.in: new
+	* lib/Amazon/Credentials/Provider/Config.pm.in: new
+	* lib/Amazon/Credentials/Provider/Container.pm.in: new
+	* lib/Amazon/Credentials/Provider/Env.pm.in: new
+	* lib/Amazon/Credentials/Provider/InstanceRole.pm.in: new
+	* lib/Amazon/Credentials/Provider/Process.pm.in: new
+	* lib/Amazon/Credentials/Provider/SSO.pm.in: new
+	* lib/Amazon/Credentials/Provider/WebIdentity.pm.in: new
+	* lib/Amazon/Credentials/Resolver/Profile.pm.in: new
+	* lib/Amazon/Credentials/Role/File.pm.in: new
+	* lib/Amazon/Credentials/Role/SSOCache.pm.in: new
+	* lib/Amazon/Credentials/Utils.pm.in: new
+	* t/16-provider-env.t: new
+	* t/17-role-file.t: new
+	* t/18-provider-config.t: new
+	* t/19-provider-process.t: new
+	* t/20-provider-container.t: new
+	* t/21-provider-instance-role.t: new
+	* t/22-provider-web-identity.t: new
+	* t/23-sso-cache-role.t: new
+	* t/24-provider-sso.t: new
+	* t/25-provider-assume-role.t: new
+	* t/26-resolver-profile.t: new
+
 Thu Sep  3 08:42:17 2026  Rob Lauer  <rclauer@gmail.com>
 
 	[1.4.0]:

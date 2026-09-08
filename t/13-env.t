@@ -3,7 +3,7 @@ use warnings;
 
 use lib qw{. lib};
 
-use Test::More tests => 5;
+use Test::More;
 use Test::Output;
 
 use UnitTest qw(init_test);
@@ -19,13 +19,7 @@ my $creds;
 
 init_test;
 
-$creds = eval {
-  Amazon::Credentials->new(
-    { order => 'env',
-      debug => $ENV{DEBUG} ? 1 : 0,
-    }
-  );
-};
+$creds = eval { Amazon::Credentials->new( { order => 'env' } ); };
 
 like( $EVAL_ERROR, qr/^no\scredentials\savailable/xsm, 'raise_error => 1' )
   or BAIL_OUT($EVAL_ERROR);
@@ -36,24 +30,20 @@ local $ENV{AWS_SECRET_ACCESS_KEY} = '599797945475eefadfd';
 delete $ENV{AWS_REGION};
 delete $ENV{AWS_DEFAULT_REGION};
 
-$creds = eval {
-  Amazon::Credentials->new(
-    { order              => 'env',
-      debug              => $ENV{DEBUG} ? 1 : 0,
-      no_passkey_warning => 1,
-    }
-  );
-};
+$creds = eval { Amazon::Credentials->new( { order => 'env' } ); };
 
-is( $creds->get_aws_access_key_id,
-  $ENV{AWS_ACCESS_KEY_ID}, 'get creds from env' );
+is( $creds->get_aws_access_key_id, $ENV{AWS_ACCESS_KEY_ID}, 'get creds from env' );
 
-is(
-  $creds->get_aws_secret_access_key,
-  $ENV{AWS_SECRET_ACCESS_KEY},
-  'get creds from env'
-);
+is( $creds->get_aws_secret_access_key, $ENV{AWS_SECRET_ACCESS_KEY}, 'get creds from env' );
 
-is( $creds->get_region, 'us-east-2', 'default region from .aws/config' );
+is $creds->get_region, undef, 'no region in environment';
+
+local $ENV{AWS_DEFAULT_REGION} = 'us-east-2';
+
+$creds = eval { Amazon::Credentials->new( { order => 'env' } ); };
+
+is( $creds->get_region, 'us-east-2', 'default region from environment' );
+
+done_testing;
 
 1;

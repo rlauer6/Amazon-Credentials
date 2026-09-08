@@ -1,3 +1,15 @@
 UnitTest
 Amazon::Credentials
-Amazon::Credentials::HTTP::Response 
+Amazon::Credentials::HTTP::Response
+Amazon::Credentials::Provider::Env
+Amazon::Credentials::Provider
+Amazon::Credentials::Provider::Config
+Amazon::Credentials::Provider::Process
+Amazon::Credentials::Provider::WebIdentity
+Amazon::Credentials::Provider::Container
+Amazon::Credentials::Provider::InstanceRole
+Amazon::Credentials::Provider::SSO
+Amazon::Credentials::Provider::AssumeRole
+Amazon::Credentials::Role::File
+Amazon::Credentials::Role::SSOCache
+Amazon::Credentials::Resolver::Profile

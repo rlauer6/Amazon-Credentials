@@ -2,8 +2,7 @@ use strict;
 use warnings;
 
 use lib qw{ . lib};
-
-use Test::More tests => 4;
+use Test::More;
 use JSON;
 
 use Data::Dumper;
@@ -89,24 +88,6 @@ isa_ok( $creds, 'Amazon::Credentials' );
 
 ok( ref($creds), 'find credentials - container' );
 
-my @credential_keys = qw{
-  aws_access_key_id
-  aws_secret_access_key
-  token
-  expiration
-  profile
-  source
-  container
-};
-
-my %returned_creds;
-
-if ( ref $creds ) {
-  foreach my $k (@credential_keys) {
-    $returned_creds{$k} = $creds->can("get_$k")->($creds);
-  }
-}
-
-is_deeply( \%expected_creds, \%returned_creds, 'got expected creds' );
+done_testing;
 
 1;

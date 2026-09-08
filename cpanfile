@@ -1,4 +1,6 @@
+requires "Amazon::Signature4::Lite", "1.0.5";
 requires "Class::Accessor::Fast", "0.31";
+requires "Class::Accessor::Fast", "0.51";
 requires "Config::Tiny", "2.28";
 requires "Date::Format", "2.24";
 requires "File::HomeDir", "1.00";
@@ -12,6 +14,9 @@ requires "Log::Log4perl", "1.57";
 requires "Log::Log4perl::Level", "0";
 requires "Net::SSLeay", "0";
 requires "POSIX::strptime", "0.13";
+requires "Role::Tiny", "0";
+requires "Role::Tiny::With", "2.002004";
 requires "Test::Output", "1.036";
 requires "Test::Without::Module", "0";
+requires "URI::Escape", "5.36";
 requires "perl", "5.010";

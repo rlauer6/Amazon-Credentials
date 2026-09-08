@@ -11,37 +11,6 @@ use_ok 'Amazon::Credentials';
 use UnitTest qw(TRUE FALSE);
 
 ########################################################################
-subtest 'populate_creds' => sub {
-########################################################################
-  my $creds_source = {
-    foo => 'bar',
-    bar => 'foo',
-    biz => 'buz',
-    baz => 'biz',
-  };
-
-  my @keys = ( foo => 'foo', bar => 'bar', biz => 'biz', baz => 'baz' );
-
-  my $creds = Amazon::Credentials::populate_creds( 'test', \@keys, $creds_source );
-
-  for (qw(source foo bar biz baz)) {
-    ok( exists $creds->{source}, 'exists ' . $_ );
-  }
-
-  is_deeply(
-    $creds_source,
-    { foo => 'bar',
-      bar => 'foo',
-      biz => 'buz',
-      baz => 'biz',
-    },
-    'source credentials not modified'
-  );
-
-  ok( join( q{}, sort keys %{$creds} ) eq join( q{}, sort qw(source foo bar biz baz) ), 'keys match' );
-};
-
-########################################################################
 subtest 'export_credentials' => sub {
 ########################################################################
 

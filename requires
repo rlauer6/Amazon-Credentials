@@ -2,10 +2,14 @@
 +JSON 0
 +List::Util 1.5
 +Net::SSLeay 0
+Amazon::Signature4::Lite 1.0.5
 Class::Accessor::Fast 0.31
 Config::Tiny 2.28
 File::HomeDir 1.00
 HTTP::Request 6.00
 HTTP::Tiny 0.088
 POSIX::strptime 0.13
+Role::Tiny 0
+Role::Tiny::With 2.002004
+URI::Escape 5.36
 perl 5.010

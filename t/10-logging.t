@@ -21,9 +21,6 @@ END_OF_TEXT
   if ($EVAL_ERROR) {
     plan skip_all => 'no Log::Log4perl available';
   }
-  else {
-    plan tests => 3;
-  }
 
   {
     no strict 'refs'; ## no critic
@@ -79,9 +76,26 @@ END_OF_TEXT
     *{'HTTP::Request::request'} = sub {
       return HTTP::Response->new;
     };
+    {
 
-    *{'HTTP::Response::new'}        = sub { bless {}, 'HTTP::Response'; };
-    *{'HTTP::Response::is_success'} = sub { 1; };
+      package HTTP::Response;
+
+      sub new {
+        my ( $class, $content ) = @_;
+
+        return bless { content => $content, }, $class;
+      }
+
+      sub is_success {
+        return 1;
+      }
+
+      sub content {
+        my ($self) = @_;
+
+        return $self->{content};
+      }
+    }
 
     *{'Amazon::Credentials::HTTP::UserAgent::new'}     = sub { bless {}, 'Amazon::Credentials::HTTP::UserAgent' };
     *{'Amazon::Credentials::HTTP::UserAgent::request'} = sub { HTTP::Response->new; };
@@ -108,9 +122,10 @@ subtest 'logging' => sub {
   $stderr_from = stderr_from(
     sub {
       Amazon::Credentials->new(
-        profile => 'foo',
-        debug   => 1,
-        logger  => undef,
+        logger                => undef,
+        debug                 => 1,  # default logger only used in debug mode
+        aws_access_key_id     => 'TEST_ACCESS_KEY',
+        aws_secret_access_key => 'TEST_SECRET_KEY',
       );
     }
   );
@@ -121,9 +136,10 @@ subtest 'logging' => sub {
   $stderr_from = stderr_from(
     sub {
       Amazon::Credentials->new(
-        profile => 'foo',
-        debug   => 1,
-        logger  => Log::Log4perl->get_logger,
+        debug                 => 1,
+        aws_access_key_id     => 'TEST_ACCESS_KEY',
+        aws_secret_access_key => 'TEST_SECRET_KEY',
+        logger                => Log::Log4perl->get_logger,
 
       );
     }
@@ -134,11 +150,12 @@ subtest 'logging' => sub {
 };
 
 ########################################################################
-subtest '_sanitize' => sub {
+subtest 'sanitize' => sub {
 ########################################################################
   my $creds = Amazon::Credentials->new(
-    profile => 'foo',
-    debug   => 0,
+    aws_access_key_id     => 'TEST_ACCESS_KEY',
+    aws_secret_access_key => 'TEST_SECRET_KEY',
+    debug                 => 0,
   );
 
   subtest 'hash and array structures' => sub {
@@ -156,7 +173,7 @@ subtest '_sanitize' => sub {
       ],
     };
 
-    my $sanitized = $creds->_sanitize($data);
+    my $sanitized = $creds->sanitize($data);
 
     is( $sanitized->{aws_access_key_id}, '[REDACTED]', 'access key id redacted' );
 
@@ -182,7 +199,7 @@ subtest '_sanitize' => sub {
     $request->header( 'X-Aws-Ec2-Metadata-Token' => 'imdsv2-token' );
     $request->header( Accept                     => '*/*' );
 
-    my $sanitized = $creds->_sanitize($request);
+    my $sanitized = $creds->sanitize($request);
 
     isnt( $sanitized, $request, 'request is cloned' );
 
@@ -208,7 +225,7 @@ subtest '_sanitize' => sub {
       }
     );
 
-    my $sanitized = $creds->_sanitize($response);
+    my $sanitized = $creds->sanitize($response);
     my $content   = decode_json( $sanitized->content );
 
     is( $content->{AccessKeyId}, '[REDACTED]', 'response access key redacted' );
@@ -227,12 +244,14 @@ subtest '_sanitize' => sub {
       }
     );
 
-    my $sanitized = $creds->_sanitize($response);
+    my $sanitized = $creds->sanitize($response);
 
     is( $sanitized->content, '[REDACTED]', 'opaque response body redacted' );
 
     is( $response->content, 'raw-secret-token', 'original response not modified' );
   };
 };
+
+done_testing;
 
 1;

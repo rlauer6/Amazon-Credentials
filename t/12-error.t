@@ -5,11 +5,10 @@ use warnings;
 
 use lib qw(.);
 
-use Test::More tests => 6;
-use Test::Output;
-
 use Data::Dumper;
 use English qw( -no_match_vars );
+use Test::More;
+use Test::Output;
 
 use UnitTest;
 
@@ -22,18 +21,15 @@ init_test( test => '12-error.t' );
 ########################################################################
 # raise_error => 1
 ########################################################################
-my $creds = eval { Amazon::Credentials->new( { profile => 'no profile', raise_error => 1, debug => $ENV{DEBUG} ? 1 : 0, } ); };
+local $ENV{AWS_EC2_METADATA_DISABLED} = 'true';
+
+my $creds = eval { Amazon::Credentials->new( { profile => 'no profile', raise_error => 1, } ); };
 
 like( $EVAL_ERROR, qr/^no\scredentials\savailable/xsm, 'raise_error => 1' )
-  or BAIL_OUT($EVAL_ERROR);
-
-#Amazon::Credentials->new(
-#  { profile     => 'no profile',
-#    raise_error => 0,
-#    print_error => 0,
-#    debug       => $ENV{DEBUG} ? 1 : 0,
-#  }
-#);
+  or do {
+  diag( Dumper( [ error => $EVAL_ERROR, creds => $creds ] ) );
+  BAIL_OUT($EVAL_ERROR);
+  };
 
 local $EVAL_ERROR = undef;
 
@@ -42,7 +38,7 @@ local $EVAL_ERROR = undef;
 ########################################################################
 stderr_like(
   sub {
-    $creds = eval { Amazon::Credentials->new( { profile => 'no profile', raise_error => 0, debug => $ENV{DEBUG} ? 1 : 0, } ); }
+    $creds = eval { Amazon::Credentials->new( { profile => 'no profile', raise_error => 0, } ); }
   },
   qr/^no\scredentials\savailable/xsm,
   'no raise error, but print error'
@@ -83,12 +79,20 @@ stderr_is(
   'no print error'
 );
 
-$creds = eval { return Amazon::Credentials->new( profile => 'boo', ); };
+stderr_like(
+  sub {
+    eval { Amazon::Credentials->new( profile => 'boo', ); }
+  },
+  qr/Can't\sexec\s"some_process_that_does_not_exist"/xsm,
+  'die if cannot open process'
+) or diag("error: $EVAL_ERROR");
 
 ########################################################################
 # could not open
 ########################################################################
 like( $EVAL_ERROR, qr/could\snot\sopen/xsm, 'bad process' )
   or diag( Dumper ["$EVAL_ERROR"] );
+
+done_testing;
 
 1;
