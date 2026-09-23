@@ -1,3 +1,29 @@
+Wed Sep 23 09:01:27 2026  Rob Lauer  <rclauer@gmail.com>
+
+	[2.0.1]:
+	* VERSION: bump
+	* release-notes.md: updated
+	* release-notes/release-notes-2.0.1.md: new
+	* .includes/bootstrap.mk: added by CPAN::Maker::Bootstrapper
+	* .includes/perl.mk: updated by CPAN::Maker::Bootstrapper
+	* .includes/update.mk: likewise
+	* Makefile: likewise
+	* lib/Amazon/Credentials/Provider.pm.in
+	- remove credential accessors
+	- use closures for accessing credentials to avoid exfiltration on object dumps
+	(new)
+	- delete credentials
+	- use new setters for credentials
+	(get_aws_access_key_id): new
+	(set_aws_access_key_id): new
+	(get_secret_access_key): new
+	(set_secret_access_key): new
+	(get_token): new
+	(set_token): new
+	* test-requires: version bumps
+	* cpanfile: likewise
+	* t/27-provider-security.t: new
+
 Tue Sep  8 13:20:32 2026  Rob Lauer  <rclauer@gmail.com>
 
 	[2.0.0]:
